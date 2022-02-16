@@ -166,9 +166,10 @@ func lookupDoH(addr string, w dns.ResponseWriter, req *dns.Msg) *dns.Msg {
 		}
 
 		for _, a := range ans {
-			r := new(dns.A)
-			r.Hdr = hdr
-			r.A = net.ParseIP(a.IP4)
+			r := &dns.A{
+				Hdr: hdr,
+				A:   net.ParseIP(a.IP4),
+			}
 			answers = append(answers, r)
 		}
 	case dns.TypeAAAA:
@@ -179,9 +180,11 @@ func lookupDoH(addr string, w dns.ResponseWriter, req *dns.Msg) *dns.Msg {
 		}
 
 		for _, a := range ans {
-			r := new(dns.AAAA)
-			r.Hdr = hdr
-			r.AAAA = net.ParseIP(a.IP6)
+			r := &dns.AAAA{
+				Hdr:  hdr,
+				AAAA: net.ParseIP(a.IP6),
+			}
+
 			answers = append(answers, r)
 		}
 	case dns.TypeCNAME:
@@ -192,13 +195,15 @@ func lookupDoH(addr string, w dns.ResponseWriter, req *dns.Msg) *dns.Msg {
 		}
 
 		for _, a := range ans {
-			r := new(dns.CNAME)
-			r.Hdr = hdr
 			cname := a.CNAME
 			if !strings.HasSuffix(cname, ".") {
 				cname = cname + "."
 			}
-			r.Target = cname
+			r := &dns.CNAME{
+				Hdr:    hdr,
+				Target: cname,
+			}
+
 			answers = append(answers, r)
 		}
 	case dns.TypeSOA:
@@ -210,22 +215,22 @@ func lookupDoH(addr string, w dns.ResponseWriter, req *dns.Msg) *dns.Msg {
 		}
 
 		for _, a := range ans {
-			r := new(dns.SOA)
-			r.Hdr = hdr
-			r.Ns = a.PrimaryNS
-			r.Mbox = a.RespMailbox
-			r.Serial = a.Serial
-			r.Refresh = uint32(a.Refresh)
-			r.Retry = uint32(a.Retry)
-			r.Expire = uint32(a.Expire)
-			r.Minttl = a.Minimum
-
+			r := &dns.SOA{
+				Hdr:     hdr,
+				Ns:      a.PrimaryNS,
+				Mbox:    a.RespMailbox,
+				Serial:  a.Serial,
+				Refresh: uint32(a.Refresh),
+				Retry:   uint32(a.Retry),
+				Expire:  uint32(a.Expire),
+				Minttl:  a.Minimum,
+			}
 			answers = append(answers, r)
 		}
 	}
 
 	m.Answer = append(m.Answer, answers...)
-	//fmt.Println(lcName, answers)
+
 	err := w.WriteMsg(m)
 	if err != nil {
 		log.Printf("Error writing msg %s\n", err)
@@ -322,16 +327,16 @@ func proxy(addr string, w dns.ResponseWriter, req *dns.Msg) {
 	w.WriteMsg(resp)
 
 	go func() {
-        timestamp := fmt.Sprintf("%f", float64(time.Now().UnixMicro())/float64(1e6))
+		p := pdnsLog{
+			dnsClient: w.RemoteAddr().String(),
+			timestamp: fmt.Sprintf("%f", float64(time.Now().UnixMicro())/float64(1e6)),
+			dnsServer: addr,
+			count:     "1",
+		}
 		for _, r := range resp.Answer {
-			p := new(pdnsLog)
-
-			p.dnsClient = w.RemoteAddr().String()
-			p.timestamp = timestamp
-			p.dnsServer = addr
 			p.ttl = fmt.Sprintf("%d", r.Header().Ttl)
 			p.rrClass = dns.Class(r.Header().Class).String()
-			p.count = "1" // what does the count means?
+
 			if rec, ok := r.(*dns.A); ok {
 				p.query = rec.Hdr.Name
 				p.queryType = dns.Type(rec.Hdr.Rrtype).String()
