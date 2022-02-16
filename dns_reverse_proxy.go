@@ -8,11 +8,11 @@ you can specify a list of IPs allowed to transfer (AXFR/IXFR).
 
 Example usage:
 $ go run dns_reverse_proxy.go -address :53 \
--default 8.8.8.8:53 \
--route .example.com.=8.8.4.4:53 \
--route .example2.com.=8.8.4.4:53,1.1.1.1:53 \
--route .example3.com.=https://dns.alidns.com \
--allow-transfer 1.2.3.4,::1
+	-default 8.8.8.8:53 \
+	-route .example.com.=8.8.4.4:53 \
+	-route .example2.com.=8.8.4.4:53,1.1.1.1:53 \
+	-route .example3.com.=https://dns.alidns.com \
+	-allow-transfer 1.2.3.4,::1
 
 A query for example.net or example.com will go to 8.8.8.8:53, the default.
 However, a query for subdomain.example.com will go to 8.8.4.4:53. -default
@@ -40,36 +40,24 @@ import (
 
 type flagStringList []string
 
-// passivedns style log
-// https://github.com/gamelinux/passivedns
-// #timestamp||dns-client ||dns-server||RR class||Query||Query Type||Answer||TTL||Count
-// 1322849924.408856||10.1.1.1||8.8.8.8||IN||upload.youtube.com.||A||74.125.43.117||46587||5
 type pdnsLog struct {
-	timestamp string
-	dnsClient string
-	dnsServer string
-	rrClass   string
-	query     string
-	queryType string
-	answer    string
-	ttl       string
-	count     string
+	timestamp, dnsClient, dnsServer, rrClass, query, queryType, answer, ttl, count string
 }
 
+// passivedns style log
+// https://github.com/gamelinux/passivedns
+// timestamp||dns-client||dns-server||RR class||Query||Query Type||Answer||TTL||Count
+// 1322849924.408856||10.1.1.1||8.8.8.8||IN||upload.youtube.com.||A||74.125.43.117||46587||5
 func (p *pdnsLog) String() string {
-	arr := []string{
-		p.timestamp,
-		p.dnsClient,
-		p.dnsServer,
-		p.rrClass,
-		p.query,
-		p.queryType,
-		p.answer,
-		p.ttl,
-		p.count,
-	}
-	log := strings.Join(arr, "||")
-	return log
+	return p.timestamp +
+		"||" + p.dnsClient +
+		"||" + p.dnsServer +
+		"||" + p.rrClass +
+		"||" + p.query +
+		"||" + p.queryType +
+		"||" + p.answer +
+		"||" + p.ttl +
+		"||" + p.count
 }
 
 func (i *flagStringList) String() string {
