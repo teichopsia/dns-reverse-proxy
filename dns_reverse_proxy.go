@@ -322,12 +322,12 @@ func proxy(addr string, w dns.ResponseWriter, req *dns.Msg) {
 	w.WriteMsg(resp)
 
 	go func() {
-
+        timestamp := fmt.Sprintf("%f", float64(time.Now().UnixMicro())/float64(1e6))
 		for _, r := range resp.Answer {
 			p := new(pdnsLog)
 
 			p.dnsClient = w.RemoteAddr().String()
-			p.timestamp = fmt.Sprintf("%f", float64(time.Now().UnixMicro())/float64(1e6))
+			p.timestamp = timestamp
 			p.dnsServer = addr
 			p.ttl = fmt.Sprintf("%d", r.Header().Ttl)
 			p.rrClass = dns.Class(r.Header().Class).String()
