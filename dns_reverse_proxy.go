@@ -329,7 +329,7 @@ func proxy(addr string, w dns.ResponseWriter, req *dns.Msg) {
 	go func() {
 		p := pdnsLog{
 			dnsClient: w.RemoteAddr().String(),
-			timestamp: fmt.Sprintf("%f", float64(time.Now().UnixMicro())/float64(1e6)),
+			timestamp: fmt.Sprintf("%f", float64(time.Now().UnixNano())/float64(1e9)),
 			dnsServer: addr,
 			count:     "1",
 		}
